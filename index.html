@@ -146,33 +146,7 @@ async function loadRemote(){
   $("syncState").textContent="클라우드 동기화";
 }
 
-  if(!sb||!user)return;
 
-  const {data,error}=await sb
-    .from("planup_data")
-    .select("data")
-    .eq("user_id",user.id)
-    .maybeSingle();
-
-  if(error){
-    $("syncState").textContent="동기화 오류";
-    console.error(error);
-    return;
-  }
-
-  if(data?.data){
-    tasks=data.data.tasks||[];
-    memos=data.data.memos||{};
-    calendar=data.data.calendar||{};
-    saveLocal();
-    remoteReady=true;
-    render();
-    $("syncState").textContent="클라우드 동기화";
-  }else{
-    remoteReady=true;
-    await syncRemote();
-  }
-}
 
 $("tabs").addEventListener("click",e=>{let b=e.target.closest("button[data-tab]");if(b){tab=b.dataset.tab;render()}});
 $("addTask").onclick=()=>{let title=$("taskInput").value.trim();if(!title)return;tasks.push({id:crypto.randomUUID(),title,date:selectedDate,status:"pending",reason:""});$("taskInput").value="";persist();render()};
