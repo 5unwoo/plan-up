@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="description" content="PLAN UP — 계획하고, 실행하고, 돌아보는 나만의 플래너">
+<link rel="manifest" href="manifest.webmanifest">
+<title>PLAN UP</title>
+<style>
+:root{--bg:#f4f6fb;--panel:#fff;--ink:#172033;--muted:#778197;--line:#e7eaf1;--accent:#5967e8;--accent2:#edf0ff;--green:#159b72;--amber:#d28a21;--red:#d65363;--shadow:0 12px 34px #1720330d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:10px 14px;background:var(--accent);color:#fff;font-weight:650}button.secondary{background:#eef0f6;color:#30394c}button.ghost{background:transparent;color:var(--muted);padding:8px}button.danger{background:#fff0f1;color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}
+header{background:#111827;color:#fff;padding:16px max(18px,calc((100vw - 1200px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:5}
+.brand{font-weight:900;letter-spacing:1.5px;font-size:21px}.brand small{display:block;font-size:10px;letter-spacing:2px;color:#aab2c6;font-weight:500}
+.wrap{max-width:1200px;margin:auto;padding:24px 18px 60px}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:25px;margin:0 0 3px}h2{font-size:17px;margin:0 0 14px}.sub{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:7px;flex-wrap:wrap}.tabs button{background:#e9ebf4;color:#606a80}.tabs button.active{background:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:var(--shadow);min-width:0}.stack{display:grid;gap:18px}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--ink);outline:none}input:focus,textarea:focus,select:focus{border-color:var(--accent)}textarea{resize:vertical;min-height:84px}
+.field{display:grid;gap:6px;margin:10px 0}.field label{font-size:12px;color:var(--muted);font-weight:700}
+.task{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}.task:last-child{border-bottom:0}.task-title{font-weight:700}.task-meta{font-size:12px;color:var(--muted);margin-top:3px}.task-actions{display:flex;gap:5px;align-items:start}.status{font-size:11px;border-radius:20px;padding:4px 8px;background:#f0f1f6;color:#667}.status.done{background:#e5f7f0;color:#12815e}.status.partial{background:#fff4df;color:#a56b13}.status.missed{background:#ffeaed;color:#c23e50}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.day{border:1px solid var(--line);border-radius:13px;padding:9px;min-width:0}.day-head{font-weight:800;font-size:13px;margin-bottom:6px}.day textarea{min-height:120px;font-size:13px;padding:8px;border:0;background:#f8f9fc}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:#f7f8fc;border-radius:13px;padding:13px}.stat strong{font-size:24px;display:block}.stat span{font-size:12px;color:var(--muted)}
+.bar{height:9px;border-radius:20px;background:#edf0f5;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:20px}
+.empty{color:var(--muted);text-align:center;padding:25px 8px;font-size:13px}.hidden{display:none!important}
+.modal{position:fixed;inset:0;background:#10182788;display:grid;place-items:center;padding:16px;z-index:10}.modalbox{background:#fff;border-radius:18px;padding:22px;width:min(460px,100%);max-height:90vh;overflow:auto}
+.note{font-size:12px;color:var(--muted);background:#f7f8fc;padding:10px;border-radius:10px}
+footer{text-align:center;color:#98a0b2;font-size:11px;padding:25px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.week{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){header{padding:13px 15px}.wrap{padding:18px 12px 45px}.week{grid-template-columns:1fr 1fr}.statgrid{gap:7px}.stat{padding:10px}.stat strong{font-size:20px}}
+</style>
+</head>
+<body>
+<header><div class="brand">PLAN UP<small>PLAN · ACT · REVIEW</small></div><div class="row"><span id="syncState" style="font-size:12px;color:#c3c9d8">기기 저장 모드</span><button id="authBtn" class="secondary">로그인</button></div></header>
+<main class="wrap">
+ <div class="topline"><div><h1>오늘의 계획을 쌓아가자.</h1><div class="sub" id="todayLabel"></div></div><div class="tabs" id="tabs"><button data-tab="daily" class="active">일간</button><button data-tab="weekly">주간</button><button data-tab="monthly">월간</button><button data-tab="report">리포트</button></div></div>
+ <section id="mainGrid" class="grid">
+  <div class="stack">
+   <div class="card">
+    <div class="between"><h2 id="planHeading">오늘의 할 일</h2><span class="sub" id="periodLabel"></span></div>
+    <div class="row"><input id="taskInput" placeholder="새로운 할 일을 입력해줘"><button id="addTask">추가</button></div>
+    <div id="taskList" style="margin-top:12px"></div>
+   </div>
+   <div class="card">
+    <div class="between"><h2>주간 캘린더</h2><div class="row"><button class="secondary" id="prevWeek">‹</button><span class="sub" id="weekLabel"></span><button class="secondary" id="nextWeek">›</button></div></div>
+    <div class="week" id="weekGrid"></div>
+   </div>
+  </div>
+  <div class="stack">
+   <div class="card"><h2>실행 현황</h2><div class="statgrid"><div class="stat"><strong id="rate">0%</strong><span>완료율</span></div><div class="stat"><strong id="doneCount">0</strong><span>완료</span></div><div class="stat"><strong id="missCount">0</strong><span>미실행</span></div></div><div class="bar" style="margin-top:15px"><i id="rateBar" style="width:0%"></i></div><p class="sub" id="rateHint">작은 실행을 기록해 보자.</p></div>
+   <div class="card"><h2>회고 메모</h2><textarea id="memo" placeholder="오늘 잘한 점, 아쉬운 점, 내일 바꿔볼 점을 자유롭게 적어봐."></textarea><div class="sub" style="margin-top:8px">자동 저장돼.</div></div>
+   <div class="card"><h2>PLAN UP 피드백</h2><div id="feedback" class="note">계획과 실행을 기록하면 현실적인 피드백을 제공할게.</div></div>
+  </div>
+ </section>
+ <section id="reportPanel" class="card hidden"><div class="between"><h2>실행 리포트</h2><select id="reportRange" style="width:auto"><option value="7">최근 7일</option><option value="30">최근 30일</option></select></div><div class="statgrid" style="margin:15px 0"><div class="stat"><strong id="rTotal">0</strong><span>등록한 계획</span></div><div class="stat"><strong id="rDone">0%</strong><span>완료율</span></div><div class="stat"><strong id="rScore">-</strong><span>실행 점수</span></div></div><h2>최근 기록</h2><div id="reportRows"></div><div class="note" id="pattern" style="margin-top:14px"></div></section>
+</main>
+<footer>PLAN UP · 꾸준함은 기록에서 시작돼.</footer>
+<div class="modal hidden" id="authModal"><div class="modalbox"><div class="between"><h2>계정 로그인</h2><button class="ghost" id="closeAuth">✕</button></div><p class="sub">Supabase를 연결하면 PC와 아이패드에서 데이터를 동기화할 수 있어.</p><div class="field"><label>이메일</label><input id="email" type="email" placeholder="name@example.com"></div><div class="field"><label>비밀번호</label><input id="password" type="password" placeholder="비밀번호"></div><div class="row"><button id="signIn">로그인</button><button id="signUp" class="secondary">회원가입</button></div><p id="authMessage" class="sub"></p><div class="note">현재 Supabase 설정이 없다면 이 기기에만 저장돼. 설정 방법은 README에 있어.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const today=new Date(); const iso=d=>{let x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
+const monday=d=>{let x=new Date(d);x.setDate(x.getDate()-(x.getDay()+6)%7);x.setHours(0,0,0,0);return x};
+let selectedDate=iso(today), weekStart=monday(today), tab="daily", tasks=[], memos={}, calendar={}, user=null, sb=null, remoteReady=false;
+const localKey="planup-v1";
+function loadLocal(){try{let x=JSON.parse(localStorage.getItem(localKey)||"{}");tasks=x.tasks||[];memos=x.memos||{};calendar=x.calendar||{}}catch(e){}}
+function saveLocal(){localStorage.setItem(localKey,JSON.stringify({tasks,memos,calendar}));}
+function periodKey(){return tab==="daily"?selectedDate:tab==="weekly"?iso(weekStart):`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`}
+function visibleTasks(){return tasks.filter(t=>tab==="daily"?t.date===selectedDate:tab==="weekly"?t.date>=iso(weekStart)&&t.date<=iso(new Date(+weekStart+6*86400000)):t.date?.slice(0,7)===periodKey());}
+function safe(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function render(){ $("todayLabel").textContent=today.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric",weekday:"long"});$("planHeading").textContent=tab==="daily"?"오늘의 할 일":tab==="weekly"?"이번 주 할 일":tab==="monthly"?"이번 달 할 일":"실행 리포트";$("periodLabel").textContent=tab==="daily"?selectedDate:tab==="weekly"?`${iso(weekStart)} ~ ${iso(new Date(+weekStart+6*86400000))}`:periodKey();
+$("mainGrid").classList.toggle("hidden",tab==="report");$("reportPanel").classList.toggle("hidden",tab!=="report");
+document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+if(tab!=="report"){renderTasks();renderStats();$("memo").value=memos[periodKey()]||"";renderCalendar();renderFeedback()}else renderReport();}
+function renderTasks(){let list=visibleTasks();$("taskList").innerHTML=list.length?list.map(t=>`<div class="task"><div><div class="task-title">${safe(t.title)}</div><div class="task-meta">${t.date} ${t.reason? "· 사유: "+safe(t.reason):""}</div><div class="row" style="margin-top:7px"><span class="status ${t.status}">${t.status==="done"?"완료":t.status==="partial"?"부분 완료":t.status==="missed"?"미실행":"미기록"}</span><button class="ghost" data-reason="${t.id}">사유 기록</button></div></div><div class="task-actions"><select data-status="${t.id}" style="width:105px;padding:7px"><option value="pending" ${t.status==="pending"?"selected":""}>미기록</option><option value="done" ${t.status==="done"?"selected":""}>완료</option><option value="partial" ${t.status==="partial"?"selected":""}>부분 완료</option><option value="missed" ${t.status==="missed"?"selected":""}>미실행</option></select><button class="danger" data-delete="${t.id}">삭제</button></div></div>`).join(""):'<div class="empty">아직 등록한 계획이 없어. 위에서 첫 계획을 추가해 봐!</div>';}
+function renderStats(){let a=visibleTasks(),done=a.filter(x=>x.status==="done").length,miss=a.filter(x=>x.status==="missed").length,rate=a.length?Math.round(done/a.length*100):0;$("rate").textContent=rate+"%";$("doneCount").textContent=done;$("missCount").textContent=miss;$("rateBar").style.width=rate+"%";$("rateHint").textContent=a.length?`${a.length}개 중 ${done}개 완료 · 부분 완료 ${a.filter(x=>x.status==="partial").length}개`:"계획을 추가하면 실행 현황을 볼 수 있어."}
+function renderFeedback(){let a=visibleTasks(),done=a.filter(x=>x.status==="done").length,partial=a.filter(x=>x.status==="partial").length,miss=a.filter(x=>x.status==="missed").length,untouched=a.filter(x=>x.status==="pending").length;let msg=!a.length?"계획을 너무 많이 세우기보다, 오늘 꼭 해야 할 핵심 과제부터 1~3개 적어보자.":untouched?`아직 결과를 기록하지 않은 계획이 ${untouched}개 있어. 완료 여부를 기록해야 정확한 회고가 가능해.`:miss?`미실행 ${miss}개를 확인했어. 사유가 반복되는지 살펴보고 다음 계획의 분량이나 시간을 조정해 보자.`:partial?`부분 완료가 ${partial}개 있어. 남은 일을 작게 나눠 다음 일정에 배치해 보자.`:`모든 계획을 완료했어. 다음에는 계획의 난이도와 소요 시간도 함께 기록해 현실성을 점검해 보자.`;$("feedback").textContent=msg;}
+function renderCalendar(){$("weekLabel").textContent=`${weekStart.getMonth()+1}/${weekStart.getDate()} 주`;let names=["월","화","수","목","금","토","일"];$("weekGrid").innerHTML=names.map((n,i)=>{let d=new Date(+weekStart+i*86400000),key=iso(d);return `<div class="day"><div class="day-head">${n} · ${d.getMonth()+1}/${d.getDate()}</div><textarea data-calendar="${key}" placeholder="이날의 계획을 적어봐...">${safe(calendar[key]||"")}</textarea></div>`}).join("");}
+function renderReport(){let n=+$("reportRange").value,from=iso(new Date(+today-(n-1)*86400000)),a=tasks.filter(t=>t.date>=from&&t.date<=iso(today)),done=a.filter(t=>t.status==="done").length,miss=a.filter(t=>t.status==="missed").length,score=a.length?Math.round((done+0.5*a.filter(t=>t.status==="partial").length)/a.length*100):0;$("rTotal").textContent=a.length;$("rDone").textContent=(a.length?Math.round(done/a.length*100):0)+"%";$("rScore").textContent=a.length?score+"/100":"-";$("reportRows").innerHTML=a.length?a.slice().reverse().slice(0,30).map(t=>`<div class="task"><div><b>${safe(t.title)}</b><div class="task-meta">${t.date} · ${t.status==="done"?"완료":t.status==="partial"?"부분 완료":t.status==="missed"?"미실행":"미기록"} ${t.reason?"· "+safe(t.reason):""}</div></div></div>`).join(""):'<div class="empty">선택한 기간의 기록이 없어.</div>';$("pattern").textContent=miss?`미실행 ${miss}건이 있어. 사유를 기록하면 반복되는 방해 요인을 찾는 데 도움이 돼.`:"현재 기간에는 미실행 기록이 없어. 좋은 흐름을 유지해 보자."}
+function persist(){saveLocal();if(remoteReady)syncRemote();}
+async function syncRemote(){if(!sb||!user)return;const payload={user_id:user.id,data:{tasks,memos,calendar},updated_at:new Date().toISOString()};const {error}=await sb.from("planup_data").upsert(payload,{onConflict:"user_id"});if(error){$("syncState").textContent="동기화 오류";console.error(error)}else $("syncState").textContent="클라우드 동기화";}
+async function initCloud(){const cfg=window.PLANUP_CONFIG||{};if(!cfg.supabaseUrl||!cfg.supabaseAnonKey||!window.supabase){$("syncState").textContent="기기 저장 모드";return}sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);const {data}=await sb.auth.getSession();user=data.session?.user||null;sb.auth.onAuthStateChange(async(_event,session)=>{user=session?.user||null;await loadRemote();updateAuth();});if(user)await loadRemote();updateAuth();}
+async function loadRemote(){if(!sb||!user)return;const {data,error}=await sb.from("planup_data").select("data").eq("user_id",user.id).maybeSingle();if(!error&&data?.data){tasks=data.data.tasks||[];memos=data.data.memos||{};calendar=data.data.calendar||{};saveLocal();remoteReady=true;render();$("syncState").textContent="클라우드 동기화"}}
+function updateAuth(){$("authBtn").textContent=user?"로그아웃":"로그인";if(user)$("syncState").textContent="클라우드 동기화 준비됨";}
+$("tabs").addEventListener("click",e=>{let b=e.target.closest("button[data-tab]");if(b){tab=b.dataset.tab;render()}});
+$("addTask").onclick=()=>{let title=$("taskInput").value.trim();if(!title)return;tasks.push({id:crypto.randomUUID(),title,date:selectedDate,status:"pending",reason:""});$("taskInput").value="";persist();render()};
+$("taskInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("addTask").click()});
+$("taskList").addEventListener("change",e=>{let id=e.target.dataset.status;if(id){let t=tasks.find(x=>x.id===id);if(t){t.status=e.target.value;persist();render()}}});
+$("taskList").addEventListener("click",e=>{let del=e.target.dataset.delete,reason=e.target.dataset.reason;if(del){tasks=tasks.filter(t=>t.id!==del);persist();render()}if(reason){let t=tasks.find(x=>x.id===reason),v=prompt("부분 완료 또는 미실행 사유를 적어줘:",t.reason||"");if(v!==null){t.reason=v;persist();render()}}});
+$("memo").oninput=()=>{memos[periodKey()]=$("memo").value;persist()};
+$("weekGrid").addEventListener("input",e=>{let d=e.target.dataset.calendar;if(d){calendar[d]=e.target.value;persist()}});
+$("prevWeek").onclick=()=>{weekStart.setDate(weekStart.getDate()-7);renderCalendar()};
+$("nextWeek").onclick=()=>{weekStart.setDate(weekStart.getDate()+7);renderCalendar()};
+$("reportRange").onchange=renderReport;
+$("authBtn").onclick=async()=>{if(user){await sb.auth.signOut();return}$("authModal").classList.remove("hidden")};
+$("closeAuth").onclick=()=>$("authModal").classList.add("hidden");
+$("signIn").onclick=auth; $("signUp").onclick=auth;
+async function auth(e){if(!sb){$("authMessage").textContent="아직 Supabase 설정이 없어. README의 연결 단계를 먼저 진행해줘.";return}let email=$("email").value.trim(),password=$("password").value;if(!email||!password){$("authMessage").textContent="이메일과 비밀번호를 입력해줘.";return}let res=e.target.id==="signUp"?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});$("authMessage").textContent=res.error?res.error.message:(e.target.id==="signUp"?"가입 확인 메일을 확인해줘.":"로그인했어.");}
+loadLocal();render();initCloud();
+</script>
+</body></html>
