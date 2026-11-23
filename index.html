@@ -82,9 +82,70 @@ function renderCalendar(){$("weekLabel").textContent=`${weekStart.getMonth()+1}/
 function renderReport(){let n=+$("reportRange").value,from=iso(new Date(+today-(n-1)*86400000)),a=tasks.filter(t=>t.date>=from&&t.date<=iso(today)),done=a.filter(t=>t.status==="done").length,miss=a.filter(t=>t.status==="missed").length,score=a.length?Math.round((done+0.5*a.filter(t=>t.status==="partial").length)/a.length*100):0;$("rTotal").textContent=a.length;$("rDone").textContent=(a.length?Math.round(done/a.length*100):0)+"%";$("rScore").textContent=a.length?score+"/100":"-";$("reportRows").innerHTML=a.length?a.slice().reverse().slice(0,30).map(t=>`<div class="task"><div><b>${safe(t.title)}</b><div class="task-meta">${t.date} · ${t.status==="done"?"완료":t.status==="partial"?"부분 완료":t.status==="missed"?"미실행":"미기록"} ${t.reason?"· "+safe(t.reason):""}</div></div></div>`).join(""):'<div class="empty">선택한 기간의 기록이 없어.</div>';$("pattern").textContent=miss?`미실행 ${miss}건이 있어. 사유를 기록하면 반복되는 방해 요인을 찾는 데 도움이 돼.`:"현재 기간에는 미실행 기록이 없어. 좋은 흐름을 유지해 보자."}
 function persist(){saveLocal();if(remoteReady)syncRemote();}
 async function syncRemote(){if(!sb||!user)return;const payload={user_id:user.id,data:{tasks,memos,calendar},updated_at:new Date().toISOString()};const {error}=await sb.from("planup_data").upsert(payload,{onConflict:"user_id"});if(error){$("syncState").textContent="동기화 오류";console.error(error)}else $("syncState").textContent="클라우드 동기화";}
-async function initCloud(){const cfg=window.PLANUP_CONFIG||{};if(!cfg.supabaseUrl||!cfg.supabaseAnonKey||!window.supabase){$("syncState").textContent="기기 저장 모드";return}sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);const {data}=await sb.auth.getSession();user=data.session?.user||null;sb.auth.onAuthStateChange(async(_event,session)=>{user=session?.user||null;await loadRemote();updateAuth();});if(user)await loadRemote();updateAuth();}
+
+async function initCloud(){
+  const cfg=window.PLANUP_CONFIG||{};
+  if(!cfg.supabaseUrl||!cfg.supabaseAnonKey||!window.supabase){
+    $("syncState").textContent="기기 저장 모드";
+    return;
+  }
+
+  sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+
+  sb.auth.onAuthStateChange((event,session)=>{
+    user=session?.user||null;
+    updateAuth();
+
+    if(user){
+      setTimeout(()=>loadRemote(),0);
+    }else{
+      remoteReady=false;
+    }
+  });
+
+  const {data,error}=await sb.auth.getSession();
+
+  if(error){
+    console.error(error);
+    $("syncState").textContent="로그인 확인 오류";
+    return;
+  }
+
+  user=data.session?.user||null;
+  updateAuth();
+
+  if(user) await loadRemote();
+}
 
 async function loadRemote(){
+  if(!sb||!user)return;
+
+  const {data,error}=await sb
+    .from("planup_data")
+    .select("data")
+    .eq("user_id",user.id)
+    .maybeSingle();
+
+  if(error){
+    $("syncState").textContent="동기화 오류";
+    console.error(error);
+    return;
+  }
+
+  if(data?.data){
+    tasks=data.data.tasks||[];
+    memos=data.data.memos||{};
+    calendar=data.data.calendar||{};
+  }else{
+    await syncRemote();
+  }
+
+  remoteReady=true;
+  saveLocal();
+  render();
+  $("syncState").textContent="클라우드 동기화";
+}
+
   if(!sb||!user)return;
 
   const {data,error}=await sb
